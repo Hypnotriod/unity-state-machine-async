@@ -32,7 +32,8 @@ public class StateMachineTest : MonoBehaviour
 
     private State Initial() => new(InParallel(
         InSequence(
-            t => Delay(4000, t)
+            t => Delay(4000, t),
+            _ => InSync(SyncAction1, () => SyncAction2("test"))
         ),
         InSequence(
             t => Delay(5000, t),
@@ -44,7 +45,7 @@ public class StateMachineTest : MonoBehaviour
     ), stateHandler =>
     {
         Debug.LogFormat("State Machine: Started at {0}", Time.realtimeSinceStartup);
-        stateHandler.RegistedSignalHandler(() =>
+        stateHandler.RegistedCencellationSignalHandler(() =>
         {
             Debug.LogFormat("State Machine: Cancelled at {0}", Time.realtimeSinceStartup);
         }, SPACE_KEY_PRESSED);
@@ -71,7 +72,7 @@ public class StateMachineTest : MonoBehaviour
    ), stateHandler =>
    {
        Debug.LogFormat("State Machine: Proceeded at {0}", Time.realtimeSinceStartup);
-       stateHandler.RegistedSignalHandler(() =>
+       stateHandler.RegistedCencellationSignalHandler(() =>
        {
            Debug.LogFormat("State Machine: Cancelled at {0}", Time.realtimeSinceStartup);
        }, Q_KEY_PRESSED);
@@ -86,9 +87,14 @@ public class StateMachineTest : MonoBehaviour
         return UniTask.Delay(delayMilliseconds, cancellationToken: token).SuppressCancellationThrow();
     }
 
-    protected void SyncAction()
+    protected void SyncAction1()
     {
-        Debug.Log("State Machine: SyncAction");
+        Debug.Log("State Machine: SyncAction1");
+    }
+
+    protected void SyncAction2(string message)
+    {
+        Debug.LogFormat("State Machine: SyncAction2 message: {0}", message);
     }
 
     #region Helper functions
@@ -98,5 +104,6 @@ public class StateMachineTest : MonoBehaviour
     protected UniTask InParallelNested(CancellationToken token, params Queue<Func<CancellationToken, UniTask>>[] list) => State.InParallelNested(token, list);
     protected UniTask InParallelNested(CancellationToken token, params Func<CancellationToken, UniTask>[] list) => State.InParallelNested(token, list);
     protected void NextState(State state) => _stateMachine.NextState(state);
+    protected UniTask InSync(params Action[] actions) => State.InSync(actions);
     #endregion
 }

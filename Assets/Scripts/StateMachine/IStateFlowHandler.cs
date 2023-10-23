@@ -3,5 +3,5 @@
 public interface IStateFlowHandler
 {
     bool IsAcive { get; }
-    void RegistedSignalHandler(Action cancellationAction, params string[] signals);
+    void RegistedCencellationSignalHandler(Action cancellationAction, params string[] signals);
 }

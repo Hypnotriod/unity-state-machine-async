@@ -2,6 +2,7 @@ using Cysharp.Threading.Tasks;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Unity.VisualScripting;
 
 public class State : IStateFlowHandler
 {
@@ -14,7 +15,7 @@ public class State : IStateFlowHandler
     private readonly List<Queue<Func<CancellationToken, UniTask>>> _tasksQueues;
     private readonly Action _completeAction;
     private readonly Action<IStateFlowHandler> _beginAction;
-    private readonly Dictionary<string, Action> _canellationSignals = new();
+    private readonly Dictionary<string, Action> _cancellationHandlers = new();
     private CancellationTokenSource _flowCts;
 
     public State(List<Queue<Func<CancellationToken, UniTask>>> tasksQueues)
@@ -31,7 +32,7 @@ public class State : IStateFlowHandler
 
     public State(Queue<Func<CancellationToken, UniTask>> queue, Action<IStateFlowHandler> beginAction, Action completeAction)
     {
-        _tasksQueues = new List<Queue<Func<CancellationToken, UniTask>>> { queue };
+        _tasksQueues = new() { queue };
         _beginAction = beginAction;
         _completeAction = completeAction;
     }
@@ -44,7 +45,7 @@ public class State : IStateFlowHandler
 
     public State(Queue<Func<CancellationToken, UniTask>> queue, Action<IStateFlowHandler> beginAction)
     {
-        _tasksQueues = new List<Queue<Func<CancellationToken, UniTask>>> { queue };
+        _tasksQueues = new() { queue };
         _beginAction = beginAction;
     }
 
@@ -56,8 +57,13 @@ public class State : IStateFlowHandler
 
     public State(Queue<Func<CancellationToken, UniTask>> queue, Action completeAction)
     {
-        _tasksQueues = new List<Queue<Func<CancellationToken, UniTask>>> { queue };
+        _tasksQueues = new() { queue };
         _completeAction = completeAction;
+    }
+
+    public State(Action<IStateFlowHandler> beginAction)
+    {
+        _beginAction = beginAction;
     }
 
     public void Suspend()
@@ -72,7 +78,7 @@ public class State : IStateFlowHandler
 
     public void Emit(string signal)
     {
-        _canellationSignals.TryGetValue(signal, out var action);
+        _cancellationHandlers.TryGetValue(signal, out var action);
         if (action != null)
         {
             Cancel();
@@ -80,11 +86,11 @@ public class State : IStateFlowHandler
         }
     }
 
-    public void RegistedSignalHandler(Action action, params string[] signals)
+    public void RegistedCencellationSignalHandler(Action action, params string[] signals)
     {
         foreach (string signal in signals)
         {
-            _canellationSignals.Add(signal, action);
+            _cancellationHandlers.Add(signal, action);
         }
     }
 
@@ -99,28 +105,33 @@ public class State : IStateFlowHandler
         _flowCts = new CancellationTokenSource();
         _beginAction?.Invoke(this);
         var tasks = new List<UniTask>();
-        foreach (var tasksQueue in _tasksQueues)
-            tasks.Add(EnqueTasks(tasksQueue, _flowCts.Token));
+        if (_tasksQueues != null)
+        {
+            foreach (var tasksQueue in _tasksQueues)
+                tasks.Add(EnqueTasks(tasksQueue, _flowCts.Token));
+        }
         await UniTask.WhenAll(tasks);
         if (_flowCts != null && !_flowCts.IsCancellationRequested)
-        {
             _completeAction?.Invoke();
-        }
-        Drain();
+        if (_completeAction != null) // waiting for signals to be emitted if no complete action provided
+            Drain();
     }
 
     private async UniTask LauchNested(CancellationToken token)
     {
         var tasks = new List<UniTask>();
-        foreach (var tasksQueue in _tasksQueues)
-            tasks.Add(EnqueTasks(tasksQueue, token));
+        if (_tasksQueues != null)
+        {
+            foreach (var tasksQueue in _tasksQueues)
+                tasks.Add(EnqueTasks(tasksQueue, token));
+        }
         await UniTask.WhenAll(tasks);
     }
 
     private void Drain()
     {
         _flowCts = null;
-        _canellationSignals.Clear();
+        _cancellationHandlers.Clear();
     }
 
     private async UniTask EnqueTasks(Queue<Func<CancellationToken, UniTask>> tasks, CancellationToken token)
@@ -169,5 +180,12 @@ public class State : IStateFlowHandler
     private static UniTask InParallelNested(List<Queue<Func<CancellationToken, UniTask>>> list, CancellationToken token)
     {
         return new State(list).LauchNested(token);
+    }
+
+    public static UniTask InSync(params Action[] actions)
+    {
+        foreach (var action in actions)
+            action();
+        return UniTask.CompletedTask;
     }
 }
