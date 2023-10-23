@@ -36,6 +36,18 @@ public class State : IStateFlowHandler
         _completeAction = completeAction;
     }
 
+    public State(List<Queue<Func<CancellationToken, UniTask>>> tasksQueues, Action<IStateFlowHandler> beginAction)
+    {
+        _tasksQueues = tasksQueues;
+        _beginAction = beginAction;
+    }
+
+    public State(Queue<Func<CancellationToken, UniTask>> queue, Action<IStateFlowHandler> beginAction)
+    {
+        _tasksQueues = new List<Queue<Func<CancellationToken, UniTask>>> { queue };
+        _beginAction = beginAction;
+    }
+
     public State(List<Queue<Func<CancellationToken, UniTask>>> tasksQueues, Action completeAction)
     {
         _tasksQueues = tasksQueues;
@@ -58,7 +70,7 @@ public class State : IStateFlowHandler
         _isActive = true;
     }
 
-    public void Signal(string signal)
+    public void Emit(string signal)
     {
         _canellationSignals.TryGetValue(signal, out var action);
         if (action != null)
@@ -68,11 +80,11 @@ public class State : IStateFlowHandler
         }
     }
 
-    public void RegistedCancellationSignalHandler(Action cancellationAction, params string[] signals)
+    public void RegistedSignalHandler(Action action, params string[] signals)
     {
         foreach (string signal in signals)
         {
-            _canellationSignals.Add(signal, cancellationAction);
+            _canellationSignals.Add(signal, action);
         }
     }
 

@@ -9,8 +9,8 @@
         _state.Lauch();
     }
 
-    public void Signal(string signal)
+    public void Emit(string signal)
     {
-        _state?.Signal(signal);
+        _state?.Emit(signal);
     }
 }
