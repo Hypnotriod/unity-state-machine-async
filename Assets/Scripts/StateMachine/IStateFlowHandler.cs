@@ -1,7 +1,10 @@
 ﻿using System;
 
-public interface IStateFlowHandler
+namespace StateMachine
 {
-    bool IsAcive { get; }
-    void RegistedCencellationSignalHandler(Action cancellationAction, params string[] signals);
+    public interface IStateFlowHandler
+    {
+        bool IsAcive { get; }
+        void RegistedCencellationSignalHandler(Action cancellationAction, params string[] signals);
+    }
 }

@@ -1,4 +1,5 @@
 using Cysharp.Threading.Tasks;
+using StateMachine;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -9,7 +10,7 @@ public class StateMachineTest : MonoBehaviour
     public static readonly string SPACE_KEY_PRESSED = "SPACE_KEY_PRESSED";
     public static readonly string Q_KEY_PRESSED = "Q_KEY_PRESSED";
 
-    private readonly StateMachine _stateMachine = new();
+    private readonly StateFlowMachine _stateMachine = new();
 
     void Start()
     {
