@@ -1,8 +1,8 @@
 ﻿public class StateMachine
 {
-    private State _state;
+    private StateFlow _state;
 
-    public void NextState(State state)
+    public void NextState(StateFlow state)
     {
         _state?.Cancel();
         _state = state;
@@ -12,5 +12,15 @@
     public void Emit(string signal)
     {
         _state?.Emit(signal);
+    }
+
+    public void Suspend()
+    {
+        _state?.Suspend();
+    }
+
+    public void Resume()
+    {
+        _state?.Resume();
     }
 }

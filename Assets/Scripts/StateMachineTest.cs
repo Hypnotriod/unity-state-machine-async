@@ -30,7 +30,7 @@ public class StateMachineTest : MonoBehaviour
         }
     }
 
-    private State Initial() => new(InParallel(
+    private StateFlow Initial() => new(InParallel(
         InSequence(
             t => Delay(4000, t),
             _ => InSync(SyncAction1, () => SyncAction2("test"))
@@ -54,7 +54,7 @@ public class StateMachineTest : MonoBehaviour
         NextState(Next());
     });
 
-    private State Next() => new(InParallel(
+    private StateFlow Next() => new(InParallel(
        InSequence(
            t => Delay(1000, t)
        ),
@@ -98,12 +98,12 @@ public class StateMachineTest : MonoBehaviour
     }
 
     #region Helper functions
-    protected List<Queue<Func<CancellationToken, UniTask>>> InParallel(params Queue<Func<CancellationToken, UniTask>>[] list) => State.InParallel(list);
-    protected List<Queue<Func<CancellationToken, UniTask>>> InParallel(params Func<CancellationToken, UniTask>[] list) => State.InParallel(list);
-    protected Queue<Func<CancellationToken, UniTask>> InSequence(params Func<CancellationToken, UniTask>[] list) => State.InSequence(list);
-    protected UniTask InParallelNested(CancellationToken token, params Queue<Func<CancellationToken, UniTask>>[] list) => State.InParallelNested(token, list);
-    protected UniTask InParallelNested(CancellationToken token, params Func<CancellationToken, UniTask>[] list) => State.InParallelNested(token, list);
-    protected void NextState(State state) => _stateMachine.NextState(state);
-    protected UniTask InSync(params Action[] actions) => State.InSync(actions);
+    protected List<Queue<Func<CancellationToken, UniTask>>> InParallel(params Queue<Func<CancellationToken, UniTask>>[] list) => StateFlow.InParallel(list);
+    protected List<Queue<Func<CancellationToken, UniTask>>> InParallel(params Func<CancellationToken, UniTask>[] list) => StateFlow.InParallel(list);
+    protected Queue<Func<CancellationToken, UniTask>> InSequence(params Func<CancellationToken, UniTask>[] list) => StateFlow.InSequence(list);
+    protected UniTask InParallelNested(CancellationToken token, params Queue<Func<CancellationToken, UniTask>>[] list) => StateFlow.InParallelNested(token, list);
+    protected UniTask InParallelNested(CancellationToken token, params Func<CancellationToken, UniTask>[] list) => StateFlow.InParallelNested(token, list);
+    protected void NextState(StateFlow state) => _stateMachine.NextState(state);
+    protected UniTask InSync(params Action[] actions) => StateFlow.InSync(actions);
     #endregion
 }

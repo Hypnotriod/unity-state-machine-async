@@ -3,8 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Unity.VisualScripting;
+using Unity.VisualScripting.Antlr3.Runtime;
 
-public class State : IStateFlowHandler
+public class StateFlow : IStateFlowHandler
 {
     public bool IsAcive
     {
@@ -16,52 +17,53 @@ public class State : IStateFlowHandler
     private readonly Action _completeAction;
     private readonly Action<IStateFlowHandler> _beginAction;
     private readonly Dictionary<string, Action> _cancellationHandlers = new();
+    private Action _suspendedCancellationAction;
     private CancellationTokenSource _flowCts;
 
-    public State(List<Queue<Func<CancellationToken, UniTask>>> tasksQueues)
+    public StateFlow(List<Queue<Func<CancellationToken, UniTask>>> tasksQueues)
     {
         _tasksQueues = tasksQueues;
     }
 
-    public State(List<Queue<Func<CancellationToken, UniTask>>> tasksQueues, Action<IStateFlowHandler> beginAction, Action completeAction)
+    public StateFlow(List<Queue<Func<CancellationToken, UniTask>>> tasksQueues, Action<IStateFlowHandler> beginAction, Action completeAction)
     {
         _tasksQueues = tasksQueues;
         _beginAction = beginAction;
         _completeAction = completeAction;
     }
 
-    public State(Queue<Func<CancellationToken, UniTask>> queue, Action<IStateFlowHandler> beginAction, Action completeAction)
+    public StateFlow(Queue<Func<CancellationToken, UniTask>> queue, Action<IStateFlowHandler> beginAction, Action completeAction)
     {
         _tasksQueues = new() { queue };
         _beginAction = beginAction;
         _completeAction = completeAction;
     }
 
-    public State(List<Queue<Func<CancellationToken, UniTask>>> tasksQueues, Action<IStateFlowHandler> beginAction)
+    public StateFlow(List<Queue<Func<CancellationToken, UniTask>>> tasksQueues, Action<IStateFlowHandler> beginAction)
     {
         _tasksQueues = tasksQueues;
         _beginAction = beginAction;
     }
 
-    public State(Queue<Func<CancellationToken, UniTask>> queue, Action<IStateFlowHandler> beginAction)
+    public StateFlow(Queue<Func<CancellationToken, UniTask>> queue, Action<IStateFlowHandler> beginAction)
     {
         _tasksQueues = new() { queue };
         _beginAction = beginAction;
     }
 
-    public State(List<Queue<Func<CancellationToken, UniTask>>> tasksQueues, Action completeAction)
+    public StateFlow(List<Queue<Func<CancellationToken, UniTask>>> tasksQueues, Action completeAction)
     {
         _tasksQueues = tasksQueues;
         _completeAction = completeAction;
     }
 
-    public State(Queue<Func<CancellationToken, UniTask>> queue, Action completeAction)
+    public StateFlow(Queue<Func<CancellationToken, UniTask>> queue, Action completeAction)
     {
         _tasksQueues = new() { queue };
         _completeAction = completeAction;
     }
 
-    public State(Action<IStateFlowHandler> beginAction)
+    public StateFlow(Action<IStateFlowHandler> beginAction)
     {
         _beginAction = beginAction;
     }
@@ -74,6 +76,12 @@ public class State : IStateFlowHandler
     public void Resume()
     {
         _isActive = true;
+        if (_suspendedCancellationAction != null)
+        {
+            var action = _suspendedCancellationAction;
+            _suspendedCancellationAction = null;
+            action();
+        }
     }
 
     public void Emit(string signal)
@@ -82,7 +90,13 @@ public class State : IStateFlowHandler
         if (action != null)
         {
             Cancel();
-            action();
+            if (!_isActive)
+            {
+                _suspendedCancellationAction = action;
+            } else
+            {
+                action();
+            }
         }
     }
 
@@ -131,6 +145,7 @@ public class State : IStateFlowHandler
     private void Drain()
     {
         _flowCts = null;
+        _suspendedCancellationAction = null;
         _cancellationHandlers.Clear();
     }
 
@@ -141,7 +156,8 @@ public class State : IStateFlowHandler
             var task = tasks.Dequeue();
             await task(token);
             if (token.IsCancellationRequested) { return; }
-            await UniTask.WaitUntil(() => _isActive, cancellationToken: token).SuppressCancellationThrow();
+            if (!_isActive)
+                await UniTask.WaitUntil(() => _isActive, cancellationToken: token).SuppressCancellationThrow();
         }
     }
 
@@ -179,7 +195,7 @@ public class State : IStateFlowHandler
 
     private static UniTask InParallelNested(List<Queue<Func<CancellationToken, UniTask>>> list, CancellationToken token)
     {
-        return new State(list).LauchNested(token);
+        return new StateFlow(list).LauchNested(token);
     }
 
     public static UniTask InSync(params Action[] actions)
