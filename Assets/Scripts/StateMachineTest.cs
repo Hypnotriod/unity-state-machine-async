@@ -31,7 +31,16 @@ public class StateMachineTest : MonoBehaviour
         }
     }
 
-    private StateFlow Initial() => new(InParallel(
+    private StateFlow Initial() => new(
+    stateHandler =>
+    {
+        Debug.LogFormat("State Machine: Started at {0}", Time.realtimeSinceStartup);
+        stateHandler.RegistedCencellationSignalHandler(() =>
+        {
+            Debug.LogFormat("State Machine: Cancelled at {0}", Time.realtimeSinceStartup);
+        }, SPACE_KEY_PRESSED);
+    },
+    InParallel(
         InSequence(
             t => Delay(4000, t),
             _ => InSync(SyncAction1, () => SyncAction2("test"))
@@ -43,19 +52,21 @@ public class StateMachineTest : MonoBehaviour
                 t => Delay(3000, t)
             )
         )
-    ), stateHandler =>
-    {
-        Debug.LogFormat("State Machine: Started at {0}", Time.realtimeSinceStartup);
-        stateHandler.RegistedCencellationSignalHandler(() =>
-        {
-            Debug.LogFormat("State Machine: Cancelled at {0}", Time.realtimeSinceStartup);
-        }, SPACE_KEY_PRESSED);
-    }, () =>
+    ), () =>
     {
         NextState(Next());
     });
 
-    private StateFlow Next() => new(InParallel(
+    private StateFlow Next() => new(
+    stateHandler =>
+    {
+        Debug.LogFormat("State Machine: Proceeded at {0}", Time.realtimeSinceStartup);
+        stateHandler.RegistedCencellationSignalHandler(() =>
+        {
+            Debug.LogFormat("State Machine: Cancelled at {0}", Time.realtimeSinceStartup);
+        }, Q_KEY_PRESSED);
+    },
+    InParallel(
        InSequence(
            t => Delay(1000, t)
        ),
@@ -70,14 +81,7 @@ public class StateMachineTest : MonoBehaviour
                t => Delay(6000, t)
            )
        )
-   ), stateHandler =>
-   {
-       Debug.LogFormat("State Machine: Proceeded at {0}", Time.realtimeSinceStartup);
-       stateHandler.RegistedCencellationSignalHandler(() =>
-       {
-           Debug.LogFormat("State Machine: Cancelled at {0}", Time.realtimeSinceStartup);
-       }, Q_KEY_PRESSED);
-   }, () =>
+   ), () =>
    {
        Debug.LogFormat("State Machine: Completed at {0}", Time.realtimeSinceStartup);
    });

@@ -25,27 +25,27 @@ namespace StateMachine
             _tasksQueues = tasksQueues;
         }
 
-        public StateFlow(List<Queue<Func<CancellationToken, UniTask>>> tasksQueues, Action<IStateFlowHandler> beginAction, Action completeAction)
+        public StateFlow(Action<IStateFlowHandler> beginAction, List<Queue<Func<CancellationToken, UniTask>>> tasksQueues, Action completeAction)
         {
             _tasksQueues = tasksQueues;
             _beginAction = beginAction;
             _completeAction = completeAction;
         }
 
-        public StateFlow(Queue<Func<CancellationToken, UniTask>> queue, Action<IStateFlowHandler> beginAction, Action completeAction)
+        public StateFlow(Action<IStateFlowHandler> beginAction, Queue<Func<CancellationToken, UniTask>> queue, Action completeAction)
         {
             _tasksQueues = new() { queue };
             _beginAction = beginAction;
             _completeAction = completeAction;
         }
 
-        public StateFlow(List<Queue<Func<CancellationToken, UniTask>>> tasksQueues, Action<IStateFlowHandler> beginAction)
+        public StateFlow(Action<IStateFlowHandler> beginAction, List<Queue<Func<CancellationToken, UniTask>>> tasksQueues)
         {
             _tasksQueues = tasksQueues;
             _beginAction = beginAction;
         }
 
-        public StateFlow(Queue<Func<CancellationToken, UniTask>> queue, Action<IStateFlowHandler> beginAction)
+        public StateFlow(Action<IStateFlowHandler> beginAction, Queue<Func<CancellationToken, UniTask>> queue)
         {
             _tasksQueues = new() { queue };
             _beginAction = beginAction;
