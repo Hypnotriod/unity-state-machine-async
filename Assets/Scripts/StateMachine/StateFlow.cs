@@ -123,7 +123,7 @@ namespace StateMachine
             if (_tasksQueues != null)
             {
                 foreach (var tasksQueue in _tasksQueues)
-                    tasks.Add(EnqueTasks(tasksQueue, _flowCts.Token));
+                    tasks.Add(DequeueTasks(tasksQueue, _flowCts.Token));
             }
             await UniTask.WhenAll(tasks);
             if (_flowCts != null && !_flowCts.IsCancellationRequested)
@@ -138,7 +138,7 @@ namespace StateMachine
             if (_tasksQueues != null)
             {
                 foreach (var tasksQueue in _tasksQueues)
-                    tasks.Add(EnqueTasks(tasksQueue, token));
+                    tasks.Add(DequeueTasks(tasksQueue, token));
             }
             await UniTask.WhenAll(tasks);
         }
@@ -150,7 +150,7 @@ namespace StateMachine
             _cancellationHandlers.Clear();
         }
 
-        private async UniTask EnqueTasks(Queue<Func<CancellationToken, UniTask>> tasks, CancellationToken token)
+        private async UniTask DequeueTasks(Queue<Func<CancellationToken, UniTask>> tasks, CancellationToken token)
         {
             while (tasks.Count > 0)
             {
