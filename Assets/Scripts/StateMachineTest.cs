@@ -92,7 +92,10 @@ public class StateMachineTest : MonoBehaviour
         Debug.LogFormat("State Machine: Proceeded to SimpleState at {0}", Time.realtimeSinceStartup);
     },
     InSequence(
-         t => Delay(t, 1500)
+    async t =>
+    {
+        await Delay(t, 1500);
+    }
     ), () =>
     {
         Debug.LogFormat("State Machine: Completed at {0}", Time.realtimeSinceStartup);
