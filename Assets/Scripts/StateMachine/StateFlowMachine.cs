@@ -11,6 +11,11 @@
             _state.Lauch();
         }
 
+        public void Cancel()
+        {
+            _state?.Cancel();
+        }
+
         public void Emit(string signal)
         {
             _state?.Emit(signal);

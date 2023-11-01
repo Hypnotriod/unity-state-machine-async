@@ -42,14 +42,14 @@ public class StateMachineTest : MonoBehaviour
     },
     InParallel(
         InSequence(
-            t => Delay(4000, t),
+            t => Delay(t, 4000),
             _ => InSync(SyncAction1, () => SyncAction2("test"))
         ),
         InSequence(
-            t => Delay(5000, t),
+            t => Delay(t, 5000),
             t => InParallelNested(t,
-                t => Delay(2000, t),
-                t => Delay(3000, t)
+                t => Delay(t, 2000),
+                t => Delay(t, 3000)
             )
         )
     ), () =>
@@ -67,26 +67,39 @@ public class StateMachineTest : MonoBehaviour
         }, Q_KEY_PRESSED);
     },
     InParallel(
-       InSequence(
-           t => Delay(1000, t)
-       ),
-       InSequence(
-           t => Delay(2000, t),
-           t => InParallelNested(t,
-               t => Delay(3000, t),
-               t => Delay(4000, t)
-           ),
-           t => InParallelNested(t,
-               t => Delay(5000, t),
-               t => Delay(6000, t)
-           )
-       )
-   ), () =>
-   {
-       Debug.LogFormat("State Machine: Completed at {0}", Time.realtimeSinceStartup);
-   });
+        InSequence(
+            t => Delay(t, 1000)
+        ),
+        InSequence(
+            t => Delay(t, 2000),
+            t => InParallelNested(t,
+                t => Delay(t, 3000),
+                t => Delay(t, 4000)
+            ),
+            t => InParallelNested(t,
+                t => Delay(t, 5000),
+                t => Delay(t, 6000)
+            )
+        )
+    ), () =>
+    {
+        Debug.LogFormat("State Machine: Completed at {0}", Time.realtimeSinceStartup);
+        NextState(Third());
+    });
 
-    protected UniTask Delay(int delayMilliseconds, CancellationToken token)
+    private StateFlow Third() => new(
+    stateHandler =>
+    {
+        Debug.Log("State Machine: Third action begins");
+    },
+    InSequence(
+         t => Delay(t, 1500)
+    ), () =>
+    {
+        Debug.Log("State Machine: Third action ends");
+    });
+
+    protected UniTask Delay(CancellationToken token, int delayMilliseconds)
     {
         Debug.LogFormat("State Machine: Delay {0} milliseconds", delayMilliseconds);
         return UniTask.Delay(delayMilliseconds, cancellationToken: token).SuppressCancellationThrow();
