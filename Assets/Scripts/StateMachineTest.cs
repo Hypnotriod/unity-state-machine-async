@@ -14,7 +14,7 @@ public class StateMachineTest : MonoBehaviour
 
     void Start()
     {
-        NextState(Initial());
+        NextState(InitialState());
     }
 
     void Update()
@@ -31,7 +31,7 @@ public class StateMachineTest : MonoBehaviour
         }
     }
 
-    private StateFlow Initial() => new(
+    private StateFlow InitialState() => new(
     stateHandler =>
     {
         Debug.LogFormat("State Machine: Started at {0}", Time.realtimeSinceStartup);
@@ -43,7 +43,7 @@ public class StateMachineTest : MonoBehaviour
     InParallel(
         InSequence(
             t => Delay(t, 4000),
-            _ => InSync(SyncAction1, () => SyncAction2("test"))
+            _ => InSync(SyncAction, () => SyncActionWithMessage("test"))
         ),
         InSequence(
             t => Delay(t, 5000),
@@ -54,13 +54,13 @@ public class StateMachineTest : MonoBehaviour
         )
     ), () =>
     {
-        NextState(Next());
+        NextState(SecondState());
     });
 
-    private StateFlow Next() => new(
+    private StateFlow SecondState() => new(
     stateHandler =>
     {
-        Debug.LogFormat("State Machine: Proceeded at {0}", Time.realtimeSinceStartup);
+        Debug.LogFormat("State Machine: Proceeded to SecondState at {0}", Time.realtimeSinceStartup);
         stateHandler.RegistedCencellationSignalHandler(() =>
         {
             Debug.LogFormat("State Machine: Cancelled at {0}", Time.realtimeSinceStartup);
@@ -83,20 +83,19 @@ public class StateMachineTest : MonoBehaviour
         )
     ), () =>
     {
-        Debug.LogFormat("State Machine: Completed at {0}", Time.realtimeSinceStartup);
-        NextState(Third());
+        NextState(SimpleState());
     });
 
-    private StateFlow Third() => new(
+    private StateFlow SimpleState() => new(
     stateHandler =>
     {
-        Debug.Log("State Machine: Third action begins");
+        Debug.LogFormat("State Machine: Proceeded to SimpleState at {0}", Time.realtimeSinceStartup);
     },
     InSequence(
          t => Delay(t, 1500)
     ), () =>
     {
-        Debug.Log("State Machine: Third action ends");
+        Debug.LogFormat("State Machine: Completed at {0}", Time.realtimeSinceStartup);
     });
 
     protected UniTask Delay(CancellationToken token, int delayMilliseconds)
@@ -105,14 +104,14 @@ public class StateMachineTest : MonoBehaviour
         return UniTask.Delay(delayMilliseconds, cancellationToken: token).SuppressCancellationThrow();
     }
 
-    protected void SyncAction1()
+    protected void SyncAction()
     {
-        Debug.Log("State Machine: SyncAction1");
+        Debug.Log("State Machine: SyncAction");
     }
 
-    protected void SyncAction2(string message)
+    protected void SyncActionWithMessage(string message)
     {
-        Debug.LogFormat("State Machine: SyncAction2 message: {0}", message);
+        Debug.LogFormat("State Machine: SyncActionWithMessage: {0}", message);
     }
 
     #region Helper functions
