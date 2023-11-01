@@ -1,7 +1,10 @@
 using Cysharp.Threading.Tasks;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
+using Unity.VisualScripting;
+using UnityEditor.Search;
 
 namespace StateMachine
 {
@@ -20,6 +23,7 @@ namespace StateMachine
         private Action _suspendedCancellationAction;
         private CancellationTokenSource _flowCts;
 
+        #region Constructor Overloads
         public StateFlow(List<Queue<Func<CancellationToken, UniTask>>> tasksQueues)
         {
             _tasksQueues = tasksQueues;
@@ -63,10 +67,42 @@ namespace StateMachine
             _completeAction = completeAction;
         }
 
+        public StateFlow(Action<IStateFlowHandler> beginAction, Func<CancellationToken, UniTask> singleTask, Action completeAction)
+        {
+            _beginAction = beginAction;
+            Queue<Func<CancellationToken, UniTask>> queue = new();
+            queue.Enqueue(singleTask);
+            _tasksQueues = new() { queue };
+            _completeAction = completeAction;
+        }
+
+        public StateFlow(Action<IStateFlowHandler> beginAction, Func<CancellationToken, UniTask> singleTask)
+        {
+            _beginAction = beginAction;
+            Queue<Func<CancellationToken, UniTask>> queue = new();
+            queue.Enqueue(singleTask);
+            _tasksQueues = new() { queue };
+        }
+
+        public StateFlow(Func<CancellationToken, UniTask> singleTask, Action completeAction)
+        {
+            Queue<Func<CancellationToken, UniTask>> queue = new();
+            queue.Enqueue(singleTask);
+            _tasksQueues = new() { queue };
+            _completeAction = completeAction;
+        }
+
+        public StateFlow(Action<IStateFlowHandler> beginAction, Action completeAction)
+        {
+            _beginAction = beginAction;
+            _completeAction = completeAction;
+        }
+
         public StateFlow(Action<IStateFlowHandler> beginAction)
         {
             _beginAction = beginAction;
         }
+        #endregion
 
         public void Suspend()
         {
@@ -119,13 +155,13 @@ namespace StateMachine
         {
             _flowCts = new CancellationTokenSource();
             _beginAction?.Invoke(this);
-            var tasks = new List<UniTask>();
             if (_tasksQueues != null)
             {
+                var tasks = new List<UniTask>();
                 foreach (var tasksQueue in _tasksQueues)
                     tasks.Add(DequeueTasks(tasksQueue, _flowCts.Token));
+                await UniTask.WhenAll(tasks);
             }
-            await UniTask.WhenAll(tasks);
             if (_flowCts != null && !_flowCts.IsCancellationRequested)
                 _completeAction?.Invoke();
             if (_completeAction != null) // waiting for signals to be emitted if no complete action provided
@@ -134,12 +170,10 @@ namespace StateMachine
 
         private async UniTask LauchNested(CancellationToken token)
         {
+            if (_tasksQueues == null) { return; }
             var tasks = new List<UniTask>();
-            if (_tasksQueues != null)
-            {
-                foreach (var tasksQueue in _tasksQueues)
-                    tasks.Add(DequeueTasks(tasksQueue, token));
-            }
+            foreach (var tasksQueue in _tasksQueues)
+                tasks.Add(DequeueTasks(tasksQueue, token));
             await UniTask.WhenAll(tasks);
         }
 

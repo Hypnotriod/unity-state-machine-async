@@ -90,13 +90,10 @@ public class StateMachineTest : MonoBehaviour
     stateHandler =>
     {
         Debug.LogFormat("State Machine: Proceeded to SimpleState at {0}", Time.realtimeSinceStartup);
-    },
-    InSequence(
-    async t =>
+    }, async t =>
     {
         await Delay(t, 1500);
-    }
-    ), () =>
+    }, () =>
     {
         Debug.LogFormat("State Machine: Completed at {0}", Time.realtimeSinceStartup);
     });
